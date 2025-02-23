@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生成 Excel 文件</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <button onclick="generateExcel()">生成 Excel 文件并下载</button>
+
+  <script>
+    function generateRandomDate() {
+      const start = new Date(2020, 0, 1);
+      const end = new Date(2025, 11, 31);
+      return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()))
+        .toISOString().split('T')[0];
+    }
+
+    function generateExcel() {
+      // 表头
+      const headers = ['序号', '名称', '类别', '日期', '金额', '状态'];
+
+      // 生成 1000 行数据
+      const data = [headers]; // 把表头作为第一行
+      const categories = ['A', 'B', 'C', 'D', 'E'];
+      const statuses = ['进行中', '已完成', '待审批'];
+
+      for (let i = 1; i <= 1000; i++) {
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+        const amount = (Math.random() * 1000).toFixed(2); // 随机金额
+        const date = generateRandomDate();
+
+        // 创建数据行
+        let row = [i, `项目${i}`, randomCategory, date, amount, randomStatus];
+
+        // 30% 的概率重复上一行
+        if (Math.random() < 0.3 && i > 1) {
+          row = [...data[data.length - 1]];
+          row[0] = i; // 确保序号仍然唯一
+        }
+
+        // 20% 的概率某个列值与之前的某个数据相同
+        if (Math.random() < 0.2 && data.length > 5) {
+          let randomRowIndex = Math.floor(Math.random() * (data.length - 1)) + 1;
+          let randomColIndex = Math.floor(Math.random() * headers.length);
+          row[randomColIndex] = data[randomRowIndex][randomColIndex];
+        }
+
+        data.push(row);
+      }
+
+      // 创建 Excel
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+      // 生成文件
+      const dataArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([dataArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const file = new File([blob], 'test-table.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      // 触发下载
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(file);
+      downloadLink.download = file.name;
+      downloadLink.click();
+    }
+  </script>
+
+</body>
+</html>
